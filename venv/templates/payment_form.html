@@ -11,35 +11,58 @@
 <div class="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto">
     {# Form submits to the current URL (/record_payment/...) #}
     <form method="POST">
+        {# --- Use OCR data if available, otherwise use existing payment data --- #}
+        {% set current_amount = ocr_data.get('amount') if ocr_data and ocr_data.get('amount') else (payment.amount_paid if payment.amount_paid is not none else '') %}
+        {% set current_date = ocr_data.get('date') if ocr_data and ocr_data.get('date') else (payment.payment_date.strftime('%Y-%m-%d') if payment.payment_date else '') %}
+        {% set current_receipt_id = ocr_data.get('receipt_id') if ocr_data and ocr_data.get('receipt_id') else (payment.receipt_id if payment.receipt_id else '') %}
+
         <div class="mb-4">
             <label for="amount_paid" class="block text-sm font-medium text-gray-700 mb-1">Amount Paid</label>
-            <input type="number" step="0.01" name="amount_paid" id="amount_paid" value="{{ payment.amount_paid if payment.amount_paid is not none else '' }}"
+            <input type="number" step="0.01" name="amount_paid" id="amount_paid" value="{{ current_amount }}"
                    placeholder="e.g., 2500.00"
                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+             {# Display message if value was pre-filled by OCR #}
+             {% if ocr_data and ocr_data.get('amount') %}
+                <p class="text-xs text-purple-600 mt-1">Pre-filled by OCR - Please verify.</p>
+             {% endif %}
         </div>
 
         <div class="mb-4">
             <label for="payment_date" class="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
-            <input type="date" name="payment_date" id="payment_date" value="{{ payment.payment_date.strftime('%Y-%m-%d') if payment.payment_date else '' }}"
+            <input type="date" name="payment_date" id="payment_date" value="{{ current_date }}"
                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            {# Display message if value was pre-filled by OCR #}
+            {% if ocr_data and ocr_data.get('date') %}
+                <p class="text-xs text-purple-600 mt-1">Pre-filled by OCR - Please verify.</p>
+            {% endif %}
         </div>
 
         <div class="mb-4">
             <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status*</label>
             <select name="status" id="status" required {# HTML5 required attribute #}
                     class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                <option value="Pending" {% if payment.status == 'Pending' %}selected{% endif %}>Pending</option>
-                <option value="Paid" {% if payment.status == 'Paid' %}selected{% endif %}>Paid</option>
-                <option value="Partial" {% if payment.status == 'Partial' %}selected{% endif %}>Partial</option>
-                {# Add other statuses here if needed in the future #}
+                {# Default to 'Paid' if OCR likely succeeded, otherwise use current status #}
+                {% set default_status = 'Paid' if ocr_data and (ocr_data.get('amount') or ocr_data.get('date') or ocr_data.get('receipt_id')) else payment.status %}
+                <option value="Pending" {% if default_status == 'Pending' %}selected{% endif %}>Pending</option>
+                <option value="Paid" {% if default_status == 'Paid' %}selected{% endif %}>Paid</option>
+                <option value="Partial" {% if default_status == 'Partial' %}selected{% endif %}>Partial</option>
+                <option value="Receipt Found" {% if default_status == 'Receipt Found' %}selected{% endif %}>Receipt Found</option> {# Added status #}
             </select>
+             {# Display message if value was defaulted by OCR #}
+             {% if default_status == 'Paid' and payment.status != 'Paid' and ocr_data %}
+                <p class="text-xs text-purple-600 mt-1">Defaulted to 'Paid' based on OCR - Please verify.</p>
+             {% endif %}
         </div>
 
         <div class="mb-4">
             <label for="receipt_id" class="block text-sm font-medium text-gray-700 mb-1">Receipt ID / UPI Ref (Optional)</label>
-            <input type="text" name="receipt_id" id="receipt_id" value="{{ payment.receipt_id if payment.receipt_id else '' }}"
+            <input type="text" name="receipt_id" id="receipt_id" value="{{ current_receipt_id }}"
                    placeholder="e.g., UPI Transaction ID"
                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+             {# Display message if value was pre-filled by OCR #}
+             {% if ocr_data and ocr_data.get('receipt_id') %}
+                <p class="text-xs text-purple-600 mt-1">Pre-filled by OCR - Please verify.</p>
+             {% endif %}
         </div>
 
         <div class="mb-4">

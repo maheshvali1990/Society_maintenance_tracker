@@ -1,5 +1,6 @@
 # models.py
 # Defines the database structure using SQLAlchemy
+# --- Updated to add is_late flag ---
 
 from flask_sqlalchemy import SQLAlchemy
 import datetime
@@ -11,13 +12,17 @@ db = SQLAlchemy()
 class Household(db.Model):
     """Represents a household in the society."""
     id = db.Column(db.Integer, primary_key=True)
-    flat_number = db.Column(db.String(20), unique=True, nullable=False)
+    flat_number = db.Column(db.String(20), nullable=False) # Removed unique=True, combined with wing for uniqueness check in app logic
     wing = db.Column(db.String(10), nullable=True)
     owner_renter_name = db.Column(db.String(100), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     # Relationship to payments (one household has many payments)
     payments = db.relationship('Payment', backref='household', lazy=True, cascade="all, delete-orphan")
+
+    # Ensure unique combination of flat_number and wing
+    __table_args__ = (db.UniqueConstraint('flat_number', 'wing', name='_flat_wing_uc'),)
+
 
     def __repr__(self):
         return f'<Household {self.wing}-{self.flat_number}>'
@@ -31,15 +36,18 @@ class Payment(db.Model):
     amount_paid = db.Column(db.Float, nullable=True) # Amount actually paid
     expected_amount = db.Column(db.Float, nullable=True) # Expected amount for the month (optional)
     payment_date = db.Column(db.Date, nullable=True) # Date the payment was made/recorded
-    status = db.Column(db.String(20), nullable=False, default='Pending') # e.g., 'Pending', 'Paid', 'Partial'
+    status = db.Column(db.String(20), nullable=False, default='Pending') # e.g., 'Pending', 'Paid', 'Partial', 'Receipt Found'
     receipt_id = db.Column(db.String(100), nullable=True) # UPI transaction ID or notes
     notes = db.Column(db.Text, nullable=True) # Any additional notes
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    # --- New Field for Late Payment ---
+    is_late = db.Column(db.Boolean, default=False, nullable=False)
 
     # Ensure a household can only have one payment record per month/year
     __table_args__ = (db.UniqueConstraint('household_id', 'payment_month', 'payment_year', name='_household_month_year_uc'),)
 
     def __repr__(self):
-        return f'<Payment HouseholdID:{self.household_id} {self.payment_year}-{self.payment_month} Status:{self.status}>'
+        late_marker = " (Late)" if self.is_late else ""
+        return f'<Payment HouseholdID:{self.household_id} {self.payment_year}-{self.payment_month} Status:{self.status}{late_marker}>'
 
-#--------------------------------------------------------------------------

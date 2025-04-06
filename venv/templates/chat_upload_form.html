@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Chat Export - Maintenance Tracker{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold text-gray-800 mb-4">Upload WhatsApp Chat Export</h1>
+
+<div class="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto">
+    <p class="text-sm text-gray-600 mb-4">
+        Export the WhatsApp group chat **Without Media** to a `.txt` file and upload it here.
+        The system will attempt to parse it to identify potential receipts based on image attachments and captions containing flat/wing information.
+        <br>
+        <strong class="text-red-600">Note:</strong> Parsing depends heavily on the chat format and caption patterns. It may not find all receipts or extract information perfectly. Manual verification is still required.
+    </p>
+    {# Form submits to the upload_chat route, enabling file uploads #}
+    <form method="POST" enctype="multipart/form-data">
+        <div class="mb-4">
+            <label for="chatfile" class="block text-sm font-medium text-gray-700 mb-1">Select Chat Export File (.txt):</label>
+            <input type="file" name="chatfile" id="chatfile" required accept=".txt"
+                   class="mt-1 block w-full text-sm text-gray-500
+                          file:mr-4 file:py-2 file:px-4
+                          file:rounded-full file:border-0
+                          file:text-sm file:font-semibold
+                          file:bg-indigo-50 file:text-indigo-700
+                          hover:file:bg-indigo-100
+                         ">
+        </div>
+
+        <div class="mt-6 flex justify-end space-x-3">
+            <a href="{{ url_for('index') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
+                Cancel
+            </a>
+            <button type="submit" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
+                Upload and Process File
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
