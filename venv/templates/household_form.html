@@ -1,0 +1,44 @@
+{% extends "base.html" %} {# Inherits structure from base.html #}
+
+{% block title %}{{ title }} - Maintenance Tracker{% endblock %} {# Sets the page title (e.g., "Add Household" or "Edit Household") #}
+
+{% block content %} {# Fills the content block in base.html #}
+<h1 class="text-2xl font-semibold text-gray-800 mb-4">{{ title }}</h1>
+
+<div class="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto">
+    {# Form submits to the current URL (which will be /add_household or /edit_household/id) #}
+    <form method="POST">
+        {# Determine data source: existing household for editing, or submitted form data on validation error, or empty #}
+        {% set current_data = household if household else form_data %}
+
+        <div class="mb-4">
+            <label for="wing" class="block text-sm font-medium text-gray-700 mb-1">Wing (Optional)</label>
+            <input type="text" name="wing" id="wing" value="{{ current_data.wing if current_data else '' }}"
+                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+
+        <div class="mb-4">
+            <label for="flat_number" class="block text-sm font-medium text-gray-700 mb-1">Flat Number*</label>
+            <input type="text" name="flat_number" id="flat_number" value="{{ current_data.flat_number if current_data else '' }}" required {# HTML5 required attribute #}
+                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+
+        <div class="mb-4">
+            <label for="owner_renter_name" class="block text-sm font-medium text-gray-700 mb-1">Owner/Renter Name*</label>
+            <input type="text" name="owner_renter_name" id="owner_renter_name" value="{{ current_data.owner_renter_name if current_data else '' }}" required {# HTML5 required attribute #}
+                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+
+        <div class="mt-6 flex justify-end space-x-3">
+            {# Cancel button links back to the index page #}
+            <a href="{{ url_for('index') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
+                Cancel
+            </a>
+            {# Submit button text changes based on whether editing or adding #}
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
+                {{ 'Update' if household else 'Add' }} Household
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %} {# Inherits structure from base.html #}
+
+{% block title %}Dashboard - Maintenance Tracker{% endblock %} {# Sets the page title #}
+
+{% block content %} {# Fills the content block in base.html #}
+<h1 class="text-2xl font-semibold text-gray-800 mb-4">Maintenance Dashboard</h1>
+
+<form method="GET" action="{{ url_for('index') }}" class="mb-6 bg-white p-4 rounded shadow-md flex flex-wrap items-end gap-4">
+    <div>
+        <label for="month" class="block text-sm font-medium text-gray-700 mb-1">Month:</label>
+        <select name="month" id="month" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+            {# Loop through available months to create dropdown options #}
+            {% for m in months %}
+            <option value="{{ m }}" {% if m == current_month %}selected{% endif %}>
+                {# Use the month_map dictionary passed from Flask #}
+                {{ month_map[m] }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label for="year" class="block text-sm font-medium text-gray-700 mb-1">Year:</label>
+        <select name="year" id="year" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+            {# Loop through available years #}
+            {% for y in years %}
+            <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
+        View
+    </button>
+</form>
+
+
+<div class="bg-white shadow-md rounded-lg overflow-x-auto"> {# Added overflow-x-auto for smaller screens #}
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wing</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flat No</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner/Renter</th>
+                {# Use month_map for abbreviation (first 3 chars) #}
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Status ({{ month_map[current_month][:3] }} {{ current_year }})</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
+                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Date</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {# Check if there are any households/payments to display #}
+            {% if household_payments %}
+                {# Loop through each household and its payment info #}
+                {% for item in household_payments %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.household.wing if item.household.wing else 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.household.flat_number }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.household.owner_renter_name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        {# Display payment status with appropriate color coding #}
+                        {% if item.payment.status == 'Paid' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Paid</span>
+                        {% elif item.payment.status == 'Pending' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Pending</span>
+                        {% elif item.payment.status == 'Partial' %}
+                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Partial</span>
+                        {% else %}
+                             {# Fallback for other statuses #}
+                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">{{ item.payment.status }}</span>
+                        {% endif %}
+                    </td>
+                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {# Display amount paid, formatted to 2 decimal places #}
+                        {{ "{:.2f}".format(item.payment.amount_paid) if item.payment.amount_paid is not none else '-' }}
+                    </td>
+                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {# Display payment date formatted as YYYY-MM-DD #}
+                        {{ item.payment.payment_date.strftime('%Y-%m-%d') if item.payment.payment_date else '-' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        {# Link to record/edit payment for this household/month/year #}
+                        <a href="{{ url_for('record_payment', household_id=item.household.id, year=current_year, month=current_month) }}" class="text-indigo-600 hover:text-indigo-900">Record/Edit Payment</a>
+                        {# Link to edit household details #}
+                        <a href="{{ url_for('edit_household', id=item.household.id) }}" class="text-yellow-600 hover:text-yellow-900">Edit HH</a>
+                        {# Form to delete the household (with confirmation) #}
+                        {# *** FIX: Construct the string fully in Jinja to avoid quote escaping issues *** #}
+                        <form action="{{ url_for('delete_household', id=item.household.id) }}" method="POST" class="inline"
+                              onsubmit="return confirm('Are you sure you want to delete household {{ (item.household.wing + '-' if item.household.wing else '') + item.household.flat_number }} and all associated payments? This cannot be undone.');">
+                            <button type="submit" class="text-red-600 hover:text-red-900">Delete HH</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                {# Message displayed if no households exist #}
+                <tr>
+                    <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">No households found. Add households to get started.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

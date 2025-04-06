@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Maintenance Tracker{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Basic Tailwind configuration (can be extended)
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        // Example: Add a Google Font like 'Inter' if desired
+                        // sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        // Example: Define custom colors if needed
+                        // 'google-blue': '#4285F4',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for flash messages based on category */
+        .flash-success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .flash-error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .flash-warning { background-color: #fff3cd; border-color: #ffeeba; color: #856404; }
+        .flash-info { background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+    </style>
+    </head>
+<body class="bg-gray-100 font-sans">
+    <nav class="bg-white shadow-md mb-6">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{{ url_for('index') }}" class="text-xl font-semibold text-gray-700">Society Maintenance Tracker</a>
+            <div>
+                <a href="{{ url_for('add_household') }}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
+                    Add Household
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 pb-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-{{ category }} border px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline">{{ message }}</span>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="text-center text-gray-500 text-sm mt-10 pb-4">
+        Maintenance Tracker App
+    </footer>
+
+    </body>
+</html>
